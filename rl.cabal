@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7a9a9399b811b80af62a73cb556229aae260aaa4002aa94879327297ea492a78
+-- hash: e5a2d1f029276b806acf1db752db1ccc2d1f181743e3ec51c1b85e2e1b639a52
 
 name:           rl
 version:        0.1.0.0
@@ -29,14 +29,15 @@ library
   exposed-modules:
       Instance.Generator
       Instance.Type
+      Instance.Writer
       Lib
   other-modules:
       Paths_rl
   hs-source-dirs:
       src
   build-depends:
-      base >=4.7 && <5
-    , random
+      MonadRandom
+    , base >=4.7 && <5
   default-language: Haskell2010
 
 executable rl-exe
@@ -47,8 +48,8 @@ executable rl-exe
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
-    , random
+      MonadRandom
+    , base >=4.7 && <5
     , rl
   default-language: Haskell2010
 
@@ -61,7 +62,7 @@ test-suite rl-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
-    , random
+      MonadRandom
+    , base >=4.7 && <5
     , rl
   default-language: Haskell2010

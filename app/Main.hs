@@ -1,6 +1,7 @@
 module Main where
 
 import           Instance.Generator
+import           Instance.Writer
 
 main :: IO ()
-main = generateInstance 0.5 12
+main = generateInstance 0.5 4 >>= writeInstance "testInstance"
