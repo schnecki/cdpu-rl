@@ -27,7 +27,7 @@ writeInstance fp inst@(Instance minCapReq maxBud maxUpg caps dists upgCosts) =
   , show (nrVertices inst)
   , ""
   , "// minimum capacity required"
-  , show minCapReq
+  , dbl minCapReq
   , ""
   , "// capacity when opened"
   , list (dbl . capNormal) caps
@@ -44,7 +44,7 @@ writeInstance fp inst@(Instance minCapReq maxBud maxUpg caps dists upgCosts) =
   map (list (dbl. distUpgraded)) dists ++
   [ ""
   , "// budget"
-  , show maxBud
+  , dbl maxBud
   , ""
   , "// max upgrades"
   , show maxUpg

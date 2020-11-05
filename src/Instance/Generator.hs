@@ -9,8 +9,6 @@ import           Data.List
 
 import           Instance.Type
 
-repeatM :: Monad m => m a -> m [ a ]
-repeatM = sequence . repeat
 
 getAcceptableInstance :: Rand StdGen Instance -> IO Instance
 getAcceptableInstance mkInstance = do
@@ -22,7 +20,14 @@ getAcceptableInstance mkInstance = do
 type Symmetric = Bool
 
 makeSymmetric :: Instance -> Instance
-makeSymmetric = undefined
+makeSymmetric inst@(Instance minReq maxBud maxUpg caps dists upgCosts) = Instance minReq maxBud maxUpg caps dists' upgCosts'
+  where
+    dists' = zipWith makeSymmetric' dists [0 ..]
+    upgCosts' = upgCosts
+    makeSymmetric' :: [Distance] -> Int -> [Distance]
+    makeSymmetric' xs 0 = xs
+    makeSymmetric' xs nr = map (\idx -> Distance (normalDistance inst nr idx) (upgradedDistance inst nr idx)) [0 .. nr-1] ++ drop nr xs
+
 
 generateInstance :: Symmetric -> Double -> InstanceSize -> IO Instance
 generateInstance sym pct instSize =  getAcceptableInstance $ fmap mkSym $ Instance <$> dbl <*> dbl <*> int <*> randCapacities <*> randDistances <*> randUpgradeCosts
@@ -37,7 +42,7 @@ generateInstance sym pct instSize =  getAcceptableInstance $ fmap mkSym $ Instan
   where
     mkSym | sym = makeSymmetric
           | otherwise = id
-    maxSizeD = 10 ^ 4 :: Double
+    maxSizeD = 10 ^ 1 :: Double
     maxSizeI = round maxSizeD :: Int
     dbl :: (RandomGen g) => Rand g Double
     dbl = getRandomR (1, maxSizeD)
@@ -50,13 +55,13 @@ generateInstance sym pct instSize =  getAcceptableInstance $ fmap mkSym $ Instan
       | otherwise = Capacity u n
     randDistances = mapM randDistance [0 .. instSize - 1]
     randDistance :: (RandomGen g) => Int -> Rand g [Distance]
-    randDistance idx = replaceIndex idx (Distance 0 0) <$> replicateM (instSize - 1) (fmap checkDistance $ Distance <$> dbl <*> dbl)
+    randDistance idx = replaceIndex idx (Distance 0 0) <$> replicateM instSize (fmap checkDistance $ Distance <$> dbl <*> dbl)
     checkDistance dist@(Distance n u)
       | u < n = dist
       | otherwise = Distance u n
     replaceIndex idxx v xs = take idxx xs ++ v : drop (idxx + 1) xs
     randUpgradeCosts = mapM randUpgradeCost [0 .. instSize - 1]
-    randUpgradeCost idx = fmap (replaceIndex idx 0 . take (instSize - 1)) $ dbls
+    randUpgradeCost idx = fmap (replaceIndex idx 0 . take instSize) $ dbls
 
 
 checkInstance :: Instance -> Bool

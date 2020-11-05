@@ -43,14 +43,14 @@ data Instance =
   deriving (Show, Eq, Ord)
 
 
-distFun :: (Instance -> [[a]]) -> (a -> Double) -> Instance -> Int -> Int -> Double
+distFun :: (Show a) => (Instance -> [[a]]) -> (a -> Double) -> Instance -> Int -> Int -> Double
 distFun sel f inst x y
   | x == y = 0
   | x > y = distFun sel f inst y x
   | otherwise = f ((sel inst !? x) !? y)
   where (!?) xs nr
           | nr < length xs = xs !! nr
-          | otherwise = error $ "unexpected index in normalDistance: " ++ show (length xs) ++ " !! " ++ show nr ++ " in " ++ show inst
+          | otherwise = error $ "unexpected index in normalDistance: " ++ show xs ++ " !! " ++ show nr ++ " with (x,y) = " ++ show (x,y)
 
 normalDistance :: Instance -> Int -> Int -> Double
 normalDistance = distFun distance distNormal
