@@ -1,0 +1,3 @@
+[submodule "borl"]
+	path = borl
+	url = git@github.com:schnecki/borl.git
