@@ -1,12 +1,12 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.2.
+-- This file has been generated from package.yaml by hpack version 0.33.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e5a2d1f029276b806acf1db752db1ccc2d1f181743e3ec51c1b85e2e1b639a52
+-- hash: ff4a730aacd0f349d938ea2095559833edcbe8f0fe42f42b0f2868b583e0f7e6
 
-name:           rl
+name:           instance-generator
 version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/githubuser/rl#readme>
 homepage:       https://github.com/githubuser/rl#readme
@@ -30,39 +30,47 @@ library
       Instance.Generator
       Instance.Type
       Instance.Writer
-      Lib
   other-modules:
-      Paths_rl
+      Paths_instance_generator
   hs-source-dirs:
       src
   build-depends:
       MonadRandom
     , base >=4.7 && <5
+    , directory
+    , filepath
+    , text
   default-language: Haskell2010
 
-executable rl-exe
+executable instance-generator
   main-is: Main.hs
   other-modules:
-      Paths_rl
+      Paths_instance_generator
   hs-source-dirs:
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       MonadRandom
     , base >=4.7 && <5
-    , rl
+    , directory
+    , filepath
+    , instance-generator
+    , text
   default-language: Haskell2010
 
-test-suite rl-test
+test-suite instance-generator-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Paths_rl
+      Paths_instance_generator
   hs-source-dirs:
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       MonadRandom
     , base >=4.7 && <5
-    , rl
+    , directory
+    , filepath
+    , instance-generator
+    , text
   default-language: Haskell2010

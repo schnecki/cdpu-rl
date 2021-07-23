@@ -1,4 +1,4 @@
-name:                rl
+name:                instance-generator
 version:             0.1.0.0
 github:              "githubuser/rl"
 license:             BSD3
@@ -22,12 +22,15 @@ description:         Please see the README on GitHub at <https://github.com/gith
 dependencies:
   - base >= 4.7 && < 5
   - MonadRandom
+  - directory
+  - text
+  - filepath
 
 library:
   source-dirs: src
 
 executables:
-  rl-exe:
+  instance-generator:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
@@ -35,10 +38,10 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - rl
+    - instance-generator
 
 tests:
-  rl-test:
+  instance-generator-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -46,4 +49,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - rl
+    - instance-generator

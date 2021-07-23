@@ -30,8 +30,8 @@ resolver: lts-16.20
 #   - wai
 packages:
 - .
-- borl/
-- borl/grenade/
+# - borl/
+# - borl/grenade/
 
 # Dependency packages to be pulled from upstream that are not in the resolver.
 # These entries can reference officially published versions as well as
