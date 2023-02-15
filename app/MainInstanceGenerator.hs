@@ -5,6 +5,7 @@ import qualified Data.Text             as T
 import           System.Directory
 import           System.Environment
 import           System.FilePath.Posix
+import           System.Process
 
 import           Instance.Generator
 import           Instance.Writer
@@ -23,5 +24,8 @@ main = do
   let dLsFiltered = filter (T.isPrefixOf (T.pack (show size) <> "_")) dLs
       nr = 1 + length dLsFiltered
       instanceName = show size ++ "_" ++ show nr ++ ".txt"
-
   writeInstance (directory </> instanceName) inst
+  --
+  --
+  -- let path = directory </> instanceName
+

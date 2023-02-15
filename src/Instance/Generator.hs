@@ -31,7 +31,7 @@ makeSymmetric inst@(Instance minReq maxBud maxUpg caps dists upgCosts) = Instanc
     dists' = zipWith makeSymmetric' dists [0 ..]
     upgCosts' = upgCosts
     makeSymmetric' :: [Distance] -> Int -> [Distance]
-    makeSymmetric' xs 0 = xs
+    makeSymmetric' xs 0  = xs
     makeSymmetric' xs nr = map (\idx -> Distance (normalDistance inst nr idx) (upgradedDistance inst nr idx)) [0 .. nr-1] ++ drop nr xs
 
 
@@ -43,8 +43,8 @@ generateInstance sym maxPct instSize =
     let maxCap = maximum [minCap, maxPct * sum (map capNormal caps)]
         -- minCap = minimum (map capNormal caps) + 0.1
         minCap = sum (take 2 $ dropWhile (== 0) $ sortOn Down $ map capUpgraded caps)
-    trace ("print (pct * sumCaps, pctPlus * sumCaps): " ++ show (minCap, maxCap))
-      Instance <$> getRandomR (minCap, maxCap) <*> dbl <*> int <*> return caps <*> randDistances <*> randUpgradeCosts
+    --trace ("print (pct * sumCaps, pctPlus * sumCaps): " ++ show (minCap, maxCap))
+    Instance <$> getRandomR (minCap, maxCap) <*> dbl <*> int <*> return caps <*> randDistances <*> randUpgradeCosts
   where
     mkSym
       | sym = makeSymmetric

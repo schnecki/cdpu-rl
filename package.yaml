@@ -25,13 +25,21 @@ dependencies:
   - directory
   - text
   - filepath
+  - process
+  - transformers
+  - mtl
+  - easy-logger
+  - regex-compat
+  - containers
+  - random
 
 library:
   source-dirs: src
 
 executables:
   instance-generator:
-    main:                Main.hs
+    main:                MainInstanceGenerator.hs
+    other-modules:       []
     source-dirs:         app
     ghc-options:
     - -threaded
@@ -39,6 +47,18 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - instance-generator
+
+  instance-search:
+    main:                MainInstanceSearch.hs
+    other-modules:       []
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - instance-generator
+
 
 tests:
   instance-generator-test:

@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.35.1.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ff4a730aacd0f349d938ea2095559833edcbe8f0fe42f42b0f2868b583e0f7e6
+-- hash: 9089d591ed4b5d05e8ff4db088b7c87cccad5528d74cf6433c94421e55d2e0c3
 
 name:           instance-generator
 version:        0.1.0.0
@@ -30,6 +30,9 @@ library
       Instance.Generator
       Instance.Type
       Instance.Writer
+      Logging
+      Search.SearchInstances
+      Testing.TestCPLEX
   other-modules:
       Paths_instance_generator
   hs-source-dirs:
@@ -37,25 +40,58 @@ library
   build-depends:
       MonadRandom
     , base >=4.7 && <5
+    , containers
     , directory
+    , easy-logger
     , filepath
+    , mtl
+    , process
+    , random
+    , regex-compat
     , text
+    , transformers
   default-language: Haskell2010
 
 executable instance-generator
-  main-is: Main.hs
-  other-modules:
-      Paths_instance_generator
+  main-is: MainInstanceGenerator.hs
   hs-source-dirs:
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       MonadRandom
     , base >=4.7 && <5
+    , containers
     , directory
+    , easy-logger
     , filepath
     , instance-generator
+    , mtl
+    , process
+    , random
+    , regex-compat
     , text
+    , transformers
+  default-language: Haskell2010
+
+executable instance-search
+  main-is: MainInstanceSearch.hs
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      MonadRandom
+    , base >=4.7 && <5
+    , containers
+    , directory
+    , easy-logger
+    , filepath
+    , instance-generator
+    , mtl
+    , process
+    , random
+    , regex-compat
+    , text
+    , transformers
   default-language: Haskell2010
 
 test-suite instance-generator-test
@@ -69,8 +105,15 @@ test-suite instance-generator-test
   build-depends:
       MonadRandom
     , base >=4.7 && <5
+    , containers
     , directory
+    , easy-logger
     , filepath
     , instance-generator
+    , mtl
+    , process
+    , random
+    , regex-compat
     , text
+    , transformers
   default-language: Haskell2010
