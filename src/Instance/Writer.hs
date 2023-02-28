@@ -20,10 +20,11 @@ list :: (a -> String) -> [a] -> String
 list f = unwords . map f
 
 writeInstance :: FilePath -> Instance -> IO ()
-writeInstance fp inst@(Instance minCapReq maxBud maxUpg caps dists upgCosts) =
+writeInstance fp inst@(Instance tp minCapReq maxBud maxUpg caps dists upgCosts) =
 
   writeFile fp $ unlines $
-  [ "// number of vertices"
+  [ "// Problem type: " ++ show tp
+  , "// number of vertices"
   , show (nrVertices inst)
   , ""
   , "// minimum capacity required"

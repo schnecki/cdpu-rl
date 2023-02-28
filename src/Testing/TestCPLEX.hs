@@ -27,10 +27,10 @@ isOptimal (TestResult _ (Just lb) (Just up) _) = lb == up
 isOptimal _                                    = False
 
 
-testCPLEX :: FilePath -> IO TestResult
-testCPLEX file = do
+testCPLEX :: Int -> FilePath -> IO TestResult
+testCPLEX timeLimit file = do
   let basePath = "/home/schnecki/Documents/projects/capacitated_dispertion_problem/code"
-  out <- readCreateProcess ((shell $ basePath ++ "/cplex/main -c -i " ++ file) { cwd = Just $ basePath ++ "/cplex" }) ""
+  out <- readCreateProcess ((shell $ basePath ++ "/cplex/main -c -i " ++ file ++ " -t " ++ show timeLimit) { cwd = Just $ basePath ++ "/cplex" }) ""
   let lbReg = mkRegexWithOpts "LB: ([^\t ]*)" True True
       ubReg = mkRegexWithOpts "UB: ([^\t ]*)" True True
       timeReg = mkRegexWithOpts "TIEMPO: ([0-9]*)" True True

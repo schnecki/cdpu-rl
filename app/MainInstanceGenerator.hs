@@ -19,7 +19,7 @@ main = do
   let directory
         | length args <= 1 = "../code/instances"
         | otherwise = args !! 1
-  inst <- generateInstance True 0.30 size
+  inst <- generateInstance True 0.30 0.30 size
   dLs <- map T.pack <$> listDirectory directory
   let dLsFiltered = filter (T.isPrefixOf (T.pack (show size) <> "_")) dLs
       nr = 1 + length dLsFiltered

@@ -9,6 +9,7 @@ import           System.Environment
 import           System.FilePath.Posix
 
 import           Instance.Generator
+import           Instance.Type
 import           Instance.Writer
 import           Logging
 import           Search.SearchInstances
@@ -26,7 +27,7 @@ main = do
   let directory
         | length args <= 1 = "../code/instances"
         | otherwise = args !! 1
-  searchInstances startSize 10 5
+  searchInstances Narrow startSize 90 5
   flushLoggers
   --
   --

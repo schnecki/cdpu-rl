@@ -3,6 +3,7 @@
 module Instance.Type
   (InstanceSize
   , Distance (..)
+  , ProblemType (..)
   , Capacity (..)
   , Instance (..)
   , normalDistance
@@ -31,10 +32,18 @@ data Capacity =
   deriving (Show, Eq, Ord)
 
 
+data ProblemType
+  = Narrow
+  | Wide
+  | Euclidean
+  deriving (Show, Eq, Ord, Bounded, Enum)
+
+
 data Instance =
   Instance
-    { minCapacityRequired :: Double
-    , maxBudget           :: Double
+    { problemType         :: ProblemType
+    , minCapacityRequired :: Double -- B
+    , maxBudget           :: Double -- C
     , maxUpgrades         :: Int
     , capacity            :: [Capacity]
     , distance            :: [[Distance]]
