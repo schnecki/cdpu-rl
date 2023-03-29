@@ -7,11 +7,12 @@ import           Instance.Type
 
 data GenOptions =
   GenOptions
-   { probType   :: ProblemType
-   , minSecs    :: Int
-   , size       :: Int
-   , cap'Factor :: Maybe Double
-   , cap'Dist   :: Maybe Double
+   { optProbType     :: ProblemType
+   , optMinSecs      :: Int
+   , optSize         :: Int
+   , optCap'Factor   :: Maybe Double
+   , optCap'Dist     :: Maybe Double
+   , optMaxUp'Factor :: Double
    } deriving (Show)
 
 
@@ -27,7 +28,9 @@ parseGenOptions = info (parseOptions <**> helper) fullDesc
       Opt.optional (Opt.option auto (long "cap" <> short 'c' <> metavar "CAPACITY FACTOR" <>
                                      help "Specify capacity factor, e.g. 1.2")) <*>
       Opt.optional (Opt.option auto (long "dist" <> short 'd' <> metavar "DISTANCE FACTOR" <>
-                                     help "Distance factor, e.g. 0.75")) -- <*>
+                                     help "Distance factor, e.g. 0.75")) <*>
+      Opt.option auto (long "up" <> short 'u' <> metavar "UPGRADE FACTOR" <>
+                                     help "Pct of upgraded edges wrt to complete graph, e.g. 0.75")
 
       -- TODO
 

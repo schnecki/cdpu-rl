@@ -23,10 +23,9 @@ main = do
   enableGeneratorLogging LogStdOut
   ops <- execParser parseGenOptions
 
-  let sz = size ops
+  let sz = optSize ops
   searchInstances ops 5
   flushLoggers
   --
   --
   -- let path = directory </> instanceName
-

@@ -53,7 +53,7 @@ maxDeltaUpgrade = 0.5
 searchInstances :: GenOptions -> Int -> IO ()
 searchInstances ops minInstances = do
   $(logDebugText) $ "Options: " <> T.pack (show ops)
-  evalStateT (searchInstances' ops) (St (size ops) 0.2 0.2 (fromIntegral . minSecs $ ops) M.empty M.empty 0 0 minInstances (probType ops))
+  evalStateT (searchInstances' ops) (St (optSize ops) 0.2 0.2 (fromIntegral . optMinSecs $ ops) M.empty M.empty 0 0 minInstances (optProbType ops))
 
 
 isGood :: MinRuntime -> TestResult -> Bool
@@ -69,8 +69,8 @@ searchInstances' ops = do
       (def
          { G.symmetric = True
          , G.problemType = tp
-         , upgradedCapacityFactor = fromMaybe (upgradedCapacityFactor def) (cap'Factor ops)
-         , upgradedDistanceFactor = fromMaybe (upgradedDistanceFactor def) (cap'Dist ops)
+         , upgradedCapacityFactor = fromMaybe (upgradedCapacityFactor def) (optCap'Factor ops)
+         , upgradedDistanceFactor = fromMaybe (upgradedDistanceFactor def) (optCap'Dist ops)
          })
       pct
       deltaUp
@@ -79,7 +79,8 @@ searchInstances' ops = do
   let instanceName = show size
   let fp = directory </> instanceName
   $(logDebugText) $ "Starting CPLEX on " <> T.pack fp
-  res <- liftIO $ writeInstance fp inst >> testCPLEX 1 fp -- (2*minTime) fp
+  let t = floor $ optMaxUp'Factor ops * (fromIntegral size * (fromIntegral size - 1) / 2)
+  res <- liftIO $ writeInstance fp inst >> testCPLEX 1 t fp -- (2*minTime) fp
   $(logInfoText) $ "Try " <> T.pack (show $ nrInsts + 1) <> " w/ size, pct: " <> T.pack (show (size, pct, deltaUp)) <> ". Result: " <> T.pack (show res)
   -- Save and iterater
   addCounter (isGood minTime res)
