@@ -7,14 +7,17 @@ module Search.SearchInstances
 
 import           Control.Monad
 import           Control.Monad.State
+import           Data.Default
 import qualified Data.Map.Strict       as M
+import           Data.Maybe            (fromMaybe)
 import qualified Data.Text             as T
 import           EasyLogger
 import           System.Directory
 import           System.FilePath.Posix
 import           System.Random
 
-import           Instance.Generator
+import           GenOptions
+import           Instance.Generator    as G
 import           Instance.Type
 import           Instance.Writer
 import           Testing.TestCPLEX
@@ -34,7 +37,7 @@ data St = St
   , generatedInstances :: Int
   , minGoodInstances   :: Int
   , problemType        :: ProblemType
-  }
+  } deriving (Show)
 
 maxSize :: Int
 maxSize = 500
@@ -47,27 +50,42 @@ maxDeltaUpgrade = 0.5
 
 
 -- | Searches for instances and writes valid ones to the disk
-searchInstances :: ProblemType -> Int -> Double -> Int -> IO ()
-searchInstances tp sz minTime minInstances = evalStateT searchInstances' (St sz 0.2 0.2 minTime M.empty M.empty 0 0 minInstances tp)
+searchInstances :: GenOptions -> Int -> IO ()
+searchInstances ops minInstances = do
+  $(logDebugText) $ "Options: " <> T.pack (show ops)
+  evalStateT (searchInstances' ops) (St (size ops) 0.2 0.2 (fromIntegral . minSecs $ ops) M.empty M.empty 0 0 minInstances (probType ops))
 
 
 isGood :: MinRuntime -> TestResult -> Bool
 isGood mT = (mT <=) . seconds
 
-searchInstances' :: StateT St IO ()
-searchInstances' = do
-  St size pct deltaUp minTime pcts sizes nrGood nrInsts _ tp <- get
-  inst <- lift $ generateInstanceOfType True tp pct deltaUp size
+searchInstances' :: GenOptions -> StateT St IO ()
+searchInstances' ops = do
+  st@(St size pct deltaUp minTime pcts sizes nrGood nrInsts _ tp) <- get
+  $(logDebugText) $ "Starting search. St: " <> T.pack (show st)
+  inst <-
+    lift $
+    generateInstanceOfType
+      (def
+         { G.symmetric = True
+         , G.problemType = tp
+         , upgradedCapacityFactor = fromMaybe (upgradedCapacityFactor def) (cap'Factor ops)
+         , upgradedDistanceFactor = fromMaybe (upgradedDistanceFactor def) (cap'Dist ops)
+         })
+      pct
+      deltaUp
+      size
   let directory = "/tmp/"
   let instanceName = show size
   let fp = directory </> instanceName
+  $(logDebugText) $ "Starting CPLEX on " <> T.pack fp
   res <- liftIO $ writeInstance fp inst >> testCPLEX 1 fp -- (2*minTime) fp
   $(logInfoText) $ "Try " <> T.pack (show $ nrInsts + 1) <> " w/ size, pct: " <> T.pack (show (size, pct, deltaUp)) <> ". Result: " <> T.pack (show res)
   -- Save and iterater
   addCounter (isGood minTime res)
   if isGood minTime res
-    then saveInstanceToDisk inst res >> adaptAndRepeat res
-    else adaptAndRepeat res
+    then saveInstanceToDisk inst res >> adaptAndRepeat ops res
+    else adaptAndRepeat ops res
 
 addCounter :: Bool -> StateT St IO ()
 addCounter True = do
@@ -82,8 +100,8 @@ addCounter False = do
 x << y = 10 * x < y
 
 
-adaptAndRepeat :: TestResult -> StateT St IO ()
-adaptAndRepeat (TestResult secs lb up out) = do
+adaptAndRepeat :: GenOptions -> TestResult -> StateT St IO ()
+adaptAndRepeat ops (TestResult secs lb up out) = do
   St _ _ _ minTime _ _ nrGood _ nrInstances tp <- get
   $(logInfoText) $ "Instances: " <> T.pack (show nrGood <> "/" <> show nrInstances)
   when (nrGood < nrInstances) $ do
@@ -94,7 +112,7 @@ adaptAndRepeat (TestResult secs lb up out) = do
              else if secs > 2 * minTime
                     then oneOf [wRand (0.9, 1) changeSz, wRand (1, 1.1) changePct, wRand (1.0, 1.1) changeDeltaUp]
                     else wRand (0.9, 1.1) changeSz >> wRand (0.9, 1.1) changePct >> wRand (0.9, 1.1) changeDeltaUp
-    searchInstances'
+    searchInstances' ops
   where
     oneOf xs = liftIO (randomRIO (0, length xs - 1)) >>= \i -> xs !! i
     wRand bounds f = liftIO (randomRIO bounds) >>= f
@@ -120,7 +138,7 @@ saveInstanceToDisk inst res@(TestResult secs lb ub out) = do
   St size _ _ _ _ _ nrGood _ _ tp <- get
   let instanceName = show tp <> "_nr" <> show nrGood <> "_sz" <> show size <> "_cplexTime" <> show secs <> "_lb" <> maybe "-" show lb <> "_ub" <> maybe "-" show ub
   liftIO $ writeInstance (instanceDir </> instanceName) inst
-  liftIO $ appendFile (instanceDir </> instanceName) ("\n" <> show res)
+  liftIO $ appendFile (instanceDir </> instanceName) ("\n// " <> show res)
   liftIO $ writeFile (resultDir </> "output_" <> instanceName <> ".txt") (T.unpack out)
   liftIO $ copyFile (basePath </> "problem.lp") (resultDir </> "problem_" <> instanceName <> ".lp")
   liftIO $ copyFile (basePath </> "results.txt") (resultDir </> "results_" <> instanceName <> ".txt")

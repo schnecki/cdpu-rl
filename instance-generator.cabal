@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9089d591ed4b5d05e8ff4db088b7c87cccad5528d74cf6433c94421e55d2e0c3
+-- hash: 7266ee9a4f5d30fbb5927d06d4baa0807b8de834fb6f27f851fd728597321c29
 
 name:           instance-generator
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      GenOptions
       Instance.Generator
       Instance.Type
       Instance.Writer
@@ -41,10 +42,12 @@ library
       MonadRandom
     , base >=4.7 && <5
     , containers
+    , data-default
     , directory
     , easy-logger
     , filepath
     , mtl
+    , optparse-applicative
     , process
     , random
     , regex-compat
@@ -61,11 +64,13 @@ executable instance-generator
       MonadRandom
     , base >=4.7 && <5
     , containers
+    , data-default
     , directory
     , easy-logger
     , filepath
     , instance-generator
     , mtl
+    , optparse-applicative
     , process
     , random
     , regex-compat
@@ -82,11 +87,13 @@ executable instance-search
       MonadRandom
     , base >=4.7 && <5
     , containers
+    , data-default
     , directory
     , easy-logger
     , filepath
     , instance-generator
     , mtl
+    , optparse-applicative
     , process
     , random
     , regex-compat
@@ -106,11 +113,13 @@ test-suite instance-generator-test
       MonadRandom
     , base >=4.7 && <5
     , containers
+    , data-default
     , directory
     , easy-logger
     , filepath
     , instance-generator
     , mtl
+    , optparse-applicative
     , process
     , random
     , regex-compat

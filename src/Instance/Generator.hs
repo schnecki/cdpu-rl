@@ -2,11 +2,13 @@
 module Instance.Generator
     ( generateInstance
     , generateInstanceOfType
+    , InstanceGenConfig (..)
     ) where
 
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Control.Monad.Random
+import           Data.Default
 import           Data.List
 import           Data.Ord
 import           System.IO.Unsafe
@@ -27,7 +29,7 @@ getAcceptableInstance sym mkInstance = do
 type Symmetric = Bool
 
 makeSymmetric :: Instance -> Instance
-makeSymmetric inst@(Instance tp minReq maxBud maxUpg caps dists upgCosts) = Instance tp minReq maxBud maxUpg caps dists' upgCosts'
+makeSymmetric inst@(Instance tp minReq maxUpg caps dists upgCosts) = Instance tp minReq maxUpg caps dists' upgCosts'
   where
     dists' = zipWith makeSymmetric' dists [0 ..]
     upgCosts' = upgCosts
@@ -41,11 +43,28 @@ generateInstance sym maxPct deltaUpgradeCosts instSize = do
   let tps = [minBound .. maxBound] :: [ProblemType]
   idxTp <- randomRIO (0, length tps - 1)
   let tp = tps !! idxTp
-  generateInstanceOfType sym tp maxPct deltaUpgradeCosts instSize
+  c'Beta <- randomRIO (1, 1.3)
+  d'Factor <- randomRIO (0.1, 1)
+  generateInstanceOfType (InstanceGenConfig sym tp c'Beta d'Factor) maxPct deltaUpgradeCosts instSize
 
 
-generateInstanceOfType :: Symmetric -> ProblemType -> Double -> Double -> InstanceSize -> IO Instance
-generateInstanceOfType sym tp maxPct deltaUpgradeCosts instSize = do
+data InstanceGenConfig =
+  InstanceGenConfig
+    { symmetric              :: Bool
+    , problemType            :: ProblemType
+    , upgradedCapacityFactor :: Double
+    , upgradedDistanceFactor :: Double
+    }
+  deriving (Show, Eq, Ord)
+
+instance Default InstanceGenConfig where
+  def = InstanceGenConfig True Narrow 1 1
+
+
+generateInstanceOfType :: InstanceGenConfig -> Double -> Double -> InstanceSize -> IO Instance
+generateInstanceOfType (InstanceGenConfig sym tp c'Beta d'Delta) maxPct deltaUpgradeCosts instSize
+  | instSize < 1 = error "generateInstanceOfType: Size must be > 0 "
+generateInstanceOfType (InstanceGenConfig sym tp c'Beta d'Delta) maxPct deltaUpgradeCosts instSize = do
   getAcceptableInstance sym $
     fmap mkSym $ do
       caps <- randCapacities
@@ -53,10 +72,10 @@ generateInstanceOfType sym tp maxPct deltaUpgradeCosts instSize = do
         -- minCap = minimum (map capNormal caps) + 0.1
           minCap = sum (take 2 $ dropWhile (== 0) $ sortOn Down $ map capUpgraded caps)
       upCosts <- randUpgradeCosts
-      let budget = (deltaUpgradeCosts *) . (/2) . sum . map sum $ upCosts
+      -- let budget = (deltaUpgradeCosts *) . (/2) . sum . map sum $ upCosts
 
       --trace ("print (pct * sumCaps, pctPlus * sumCaps): " ++ show (minCap, maxCap))
-      Instance tp <$> getRandomR (minCap, maxCap) <*> pure budget <*> int <*> pure caps <*> randDistances tp <*> pure upCosts
+      Instance tp <$> getRandomR (minCap, maxCap) <*> int <*> pure caps <*> randDistances tp <*> pure upCosts
   where
     mkSym
       | sym = makeSymmetric
@@ -65,10 +84,10 @@ generateInstanceOfType sym tp maxPct deltaUpgradeCosts instSize = do
     maxSizeI = round maxSizeD :: Int
     -- dbl :: (RandomGen g) => Rand g Double
     -- dbl = getRandomR (1, maxSizeD)
-    dbls = getRandomRs (1, maxSizeD)
+    -- dbls = getRandomRs (1, maxSizeD)
     int = getRandomR (1, maxSizeI)
     randCapacities = replicateM instSize randCapacity
-    randCapacity = fmap checkCapValues $ Capacity <$> getRandomR (1, n ^ (2 :: Int)) <*> getRandomR (1, n ^ (2 :: Int))
+    randCapacity = fmap checkCapValues $ (\c -> Capacity c (c'Beta * c)) <$> getRandomR (1, n ^ (2 :: Int))
       where
         n = fromIntegral instSize :: Double
     checkCapValues cap@(Capacity n u)
@@ -85,12 +104,13 @@ generateInstanceOfType sym tp maxPct deltaUpgradeCosts instSize = do
     randDistance :: (RandomGen g) => ProblemType -> Int -> Rand g [Distance]
     randDistance tp idx = replaceIndex idx (Distance 0 0) <$> replicateM instSize (fmap checkDistance genDist)
       where
+        mkDist d = Distance d (d'Delta * d)
         genDist =
           case tp of
-            Narrow -> Distance <$> fmap fromIntegral rand <*> fmap fromIntegral rand
+            Narrow -> mkDist <$> fmap fromIntegral rand
               where n = floor . sqrt . fromIntegral $ instSize
                     rand = getRandomR (1, n :: Int)
-            Wide -> Distance <$> fmap fromIntegral rand <*> fmap fromIntegral rand
+            Wide -> mkDist <$> fmap fromIntegral rand
               where n = fromIntegral instSize ^ 2
                     rand = getRandomR (1, n :: Int)
             _ -> error "generateInstance: Euclidean in randDistance"
@@ -107,20 +127,22 @@ generateInstanceOfType sym tp maxPct deltaUpgradeCosts instSize = do
     --   | otherwise = Distance u n
     replaceIndex idxx v xs = take idxx xs ++ v : drop (idxx + 1) xs
     randUpgradeCosts = mapM randUpgradeCost [0 .. instSize - 1]
-    randUpgradeCost idx = fmap (replaceIndex idx 0 . take instSize) dbls
+    randUpgradeCost :: (RandomGen g) => Int -> Rand g [Double]
+    randUpgradeCost idx = return $ (replaceIndex idx 0 . take instSize) (repeat 1) -- dbls
 
 
 -- Needs to consider symmetry!!!!
 checkInstance :: Bool -> Instance -> Bool
 checkInstance True inst = checkInstance False (dropSym inst)
   where
-    dropSym (Instance tp minCapReq maxBud maxUpg caps dists upgCosts) =
-      Instance tp minCapReq maxBud maxUpg caps (zipWith (dropSym' (Distance 0 0)) dists [0 ..]) (zipWith (dropSym' 0) upgCosts [0 ..])
+    dropSym (Instance tp minCapReq maxUpg caps dists upgCosts) =
+      Instance tp minCapReq maxUpg caps (zipWith (dropSym' (Distance 0 0)) dists [0 ..]) (zipWith (dropSym' 0) upgCosts [0 ..])
     dropSym' zero xs nr = replicate nr zero ++ drop nr xs
-checkInstance _ inst@(Instance _ minCapReq maxBud maxUpg caps dists upgCosts) =
+checkInstance _ inst@(Instance _ minCapReq maxUpg caps dists upgCosts) =
   minCapReq <= sum (map capUpgraded caps) && -- invariant: capUpgraded >= capNormal
   -- minCapReq >= sum (take 2 $ dropWhile (== 0) $ sortOn Down $ map capNormal caps) &&
   minCapReq >= sum (take 2 $ dropWhile (== 0) $ sortOn Down $ map capUpgraded caps) &&
-  maxBud < sum (map sum upgCosts) && maxBud >= sum (take 2 $ dropWhile (== 0) $ sort $ concat upgCosts) && maxUpg < instSize
+  -- maxBud < sum (map sum upgCosts) && maxBud >= sum (take 2 $ dropWhile (== 0) $ sort $ concat upgCosts) &&
+  maxUpg < instSize
   where
     instSize = instanceSize inst

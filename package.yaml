@@ -32,6 +32,8 @@ dependencies:
   - regex-compat
   - containers
   - random
+  - optparse-applicative
+  - data-default
 
 library:
   source-dirs: src

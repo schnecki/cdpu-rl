@@ -20,7 +20,8 @@ list :: (a -> String) -> [a] -> String
 list f = unwords . map f
 
 writeInstance :: FilePath -> Instance -> IO ()
-writeInstance fp inst@(Instance tp minCapReq maxBud maxUpg caps dists upgCosts) =
+writeInstance fp inst@(Instance tp minCapReq -- maxBud
+                       maxUpg caps dists upgCosts) =
 
   writeFile fp $ unlines $
   [ "// Problem type: " ++ show tp
@@ -44,12 +45,12 @@ writeInstance fp inst@(Instance tp minCapReq maxBud maxUpg caps dists upgCosts) 
   ] ++
   map (list (dbl. distUpgraded)) dists ++
   [ ""
-  , "// budget"
-  , dbl maxBud
-  , ""
-  , "// max upgrades"
-  , show maxUpg
-  , ""
+  -- , "// budget"
+  -- , dbl maxBud
+  -- , ""
+  -- , "// max upgrades"
+  -- , show maxUpg
+  -- , ""
   , "// upgrading costs"
   ] ++
   map (list dbl) upgCosts

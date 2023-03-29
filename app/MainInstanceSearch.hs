@@ -4,10 +4,12 @@ module Main where
 
 import qualified Data.Text              as T
 import           EasyLogger
+import           Options.Applicative    as Opt
 import           System.Directory
 import           System.Environment
 import           System.FilePath.Posix
 
+import           GenOptions
 import           Instance.Generator
 import           Instance.Type
 import           Instance.Writer
@@ -19,16 +21,12 @@ main = do
   $(initLogger) LogStdOut
   setMinLogLevel LogDebug -- LogWarning -- LogInfo
   enableGeneratorLogging LogStdOut
+  ops <- execParser parseGenOptions
 
-  args <- getArgs
-  let startSize
-        | null args = 10
-        | otherwise = read (head args)
-  let directory
-        | length args <= 1 = "../code/instances"
-        | otherwise = args !! 1
-  searchInstances Narrow startSize 90 5
+  let sz = size ops
+  searchInstances ops 5
   flushLoggers
   --
   --
   -- let path = directory </> instanceName
+

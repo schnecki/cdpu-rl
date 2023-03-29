@@ -19,15 +19,15 @@ type InstanceSize = Int
 
 data Distance =
   Distance
-    { distNormal   :: Double
-    , distUpgraded :: Double
+    { distNormal   :: Double -- d
+    , distUpgraded :: Double -- d'
     }
   deriving (Show, Eq, Ord)
 
 data Capacity =
   Capacity
-    { capNormal   :: Double
-    , capUpgraded :: Double
+    { capNormal   :: Double -- c
+    , capUpgraded :: Double -- c'
     }
   deriving (Show, Eq, Ord)
 
@@ -43,7 +43,6 @@ data Instance =
   Instance
     { problemType         :: ProblemType
     , minCapacityRequired :: Double -- B
-    , maxBudget           :: Double -- C
     , maxUpgrades         :: Int
     , capacity            :: [Capacity]
     , distance            :: [[Distance]]
