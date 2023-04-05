@@ -22,7 +22,6 @@ main = do
   setMinLogLevel LogDebug -- LogWarning -- LogInfo
   enableGeneratorLogging LogStdOut
   ops <- execParser parseGenOptions
-
   let sz = optSize ops
   searchInstances ops 5
   flushLoggers

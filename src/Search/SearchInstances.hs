@@ -39,12 +39,15 @@ data St = St
   , problemType        :: ProblemType
   } deriving (Show)
 
+-- | Maximum size
 maxSize :: Int
 maxSize = 500
 
+-- | Max pct
 maxPct :: Double
 maxPct = 0.4
 
+-- | Max delta upgrad
 maxDeltaUpgrade :: Double
 maxDeltaUpgrade = 0.5
 
@@ -57,7 +60,7 @@ searchInstances ops minInstances = do
 
 
 isGood :: MinRuntime -> TestResult -> Bool
-isGood mT = (mT <=) . seconds
+isGood mT (TestResult time mLb mUb _) = mT <= time && maybe False (> 0) mLb && (Just True == ((>) . (50 *) <$> mLb <*> mUb))
 
 searchInstances' :: GenOptions -> StateT St IO ()
 searchInstances' ops = do
@@ -80,7 +83,7 @@ searchInstances' ops = do
   let fp = directory </> instanceName
   $(logDebugText) $ "Starting CPLEX on " <> T.pack fp
   let t = floor $ optMaxUp'Factor ops * (fromIntegral size * (fromIntegral size - 1) / 2)
-  res <- liftIO $ writeInstance fp inst >> testCPLEX 1 t fp -- (2*minTime) fp
+  res <- liftIO $ writeInstance fp inst >> testCPLEX (round . (2.1 *) $ minTime) t fp
   $(logInfoText) $ "Try " <> T.pack (show $ nrInsts + 1) <> " w/ size, pct: " <> T.pack (show (size, pct, deltaUp)) <> ". Result: " <> T.pack (show res)
   -- Save and iterater
   addCounter (isGood minTime res)
@@ -103,33 +106,38 @@ x << y = 10 * x < y
 
 adaptAndRepeat :: GenOptions -> TestResult -> StateT St IO ()
 adaptAndRepeat ops (TestResult secs lb up out) = do
-  St _ _ _ minTime _ _ nrGood _ nrInstances tp <- get
+  St sz pct delta minTime _ _ nrGood _ nrInstances tp <- get
   $(logInfoText) $ "Instances: " <> T.pack (show nrGood <> "/" <> show nrInstances)
   when (nrGood < nrInstances) $ do
     if secs << minTime
       then oneOf [wRand (1.5, 2.5) changeSz, wRand (0.5, 1.5) changePct, wRand (0.5, 1.5) changeDeltaUp]
       else if secs < minTime
              then oneOf [wRand (1.0, 1.1) changeSz, wRand (0.9, 1.0) changePct, wRand (0.9, 1.0) changeDeltaUp]
-             else if secs > 2 * minTime
+             else if secs >= 2 * minTime
                     then oneOf [wRand (0.9, 1) changeSz, wRand (1, 1.1) changePct, wRand (1.0, 1.1) changeDeltaUp]
                     else wRand (0.9, 1.1) changeSz >> wRand (0.9, 1.1) changePct >> wRand (0.9, 1.1) changeDeltaUp
+    -- Always randomize a little
+    St sz' pct' delta' _ _ _ _ _ _ _ <- get
+    when (sz == sz') $ wRand (0.95, 1.05) changeSz
+    when (pct == pct') $ wRand (0.95, 1.05) changePct
+    when (delta == delta') $ wRand (0.95, 1.05) changeDeltaUp
     searchInstances' ops
   where
     oneOf xs = liftIO (randomRIO (0, length xs - 1)) >>= \i -> xs !! i
     wRand bounds f = liftIO (randomRIO bounds) >>= f
     changeSz :: Double -> StateT St IO ()
     changeSz pct = do
-      $(logDebugText) $ "Modifying size to " <> T.pack (show . (100 *) $ pct) <> "%"
+      $(logDebugText) $ "Modifying size to " <> T.pack (show . round' . (100 *) $ pct) <> "%"
       modify (\x -> x {curSize = min maxSize . round . (pct *) . fromIntegral . curSize $ x})
     changePct :: Double -> StateT St IO ()
     changePct pct = do
-      $(logDebugText) $ "Modifying pct to " <> T.pack (show . (100 *) $ pct) <> "%"
-      modify (\x -> x {curPct = min maxPct . (/100) . (pct *) . (100*) . curPct $ x})
+      $(logDebugText) $ "Modifying pct to " <> T.pack (show . round' . (100 *) $ pct) <> "%"
+      modify (\x -> x {curPct = min maxPct . (/100) . round' . (pct *) . (100*) . curPct $ x})
     changeDeltaUp :: Double -> StateT St IO ()
     changeDeltaUp pct = do
-      $(logDebugText) $ "Modifying delta upgradings to " <> T.pack (show . (100 *) $ pct) <> "%"
-      modify (\x -> x {curDeltaUpgrade  = min maxDeltaUpgrade . (/100) . (pct *) . (100*) . curDeltaUpgrade $ x})
-
+      $(logDebugText) $ "Modifying delta upgradings to " <> T.pack (show . round' . (100 *) $ pct) <> "%"
+      modify (\x -> x {curDeltaUpgrade  = min maxDeltaUpgrade . (/100) . round' . (pct *) . (100*) . curDeltaUpgrade $ x})
+    round' = fromIntegral . round
 
 saveInstanceToDisk :: Instance -> TestResult -> StateT St IO ()
 saveInstanceToDisk inst res@(TestResult secs lb ub out) = do
@@ -141,13 +149,11 @@ saveInstanceToDisk inst res@(TestResult secs lb ub out) = do
   liftIO $ writeInstance (instanceDir </> instanceName) inst
   liftIO $ appendFile (instanceDir </> instanceName) ("\n// " <> show res)
   liftIO $ writeFile (resultDir </> "output_" <> instanceName <> ".txt") (T.unpack out)
-  liftIO $ copyFile (basePath </> "problem.lp") (resultDir </> "problem_" <> instanceName <> ".lp")
-  liftIO $ copyFile (basePath </> "results.txt") (resultDir </> "results_" <> instanceName <> ".txt")
-  liftIO $ copyFile (basePath </> "results.txt_details.txt") (resultDir </> "results_details_" <> instanceName <> ".txt")
+  liftIO $ copyFile (cplexOutDir </> "problem.lp") (resultDir </> "problem_" <> instanceName <> ".lp")
+  liftIO $ copyFile (cplexOutDir </> "results.txt") (resultDir </> "results_" <> instanceName <> ".txt")
+  liftIO $ copyFile (cplexOutDir </> "results.txt_details.txt") (resultDir </> "results_details_" <> instanceName <> ".txt")
   where searchDir = "search_result"
         instanceDir = searchDir </> "instances"
         resultDir = searchDir </> "results"
         createDirIfMissing dir = doesDirectoryExist dir >>= \x -> unless x (createDirectory dir)
-
-
-        basePath = "results/"
+        cplexOutDir = cplexDir </> "results"
